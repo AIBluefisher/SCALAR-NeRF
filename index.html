@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html>
+    <head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>SCALAR-NeRF</title>
+    <meta https-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="./src/css/style_pages.css">
+    
+    <script src="./src/js/jquery.min.js"></script>
+    <script src="./src/js/jquery-1.10.2.js"></script>
+
+    <!--Magnifier-->
+    <link rel="stylesheet" href="./src/css/magnifier.css">
+    <!-- <script src="./src/js/magnifier.js"></script> -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <!--Slider-->
+    <link rel="stylesheet" href="./src/css/dics.min.css">
+    <script src="./src/js/dics.min.js"></script>
+
+
+    <style>
+        * {box-sizing: border-box;}
+        
+        .img-magnifier-container {
+            position:relative;
+        }
+        
+        .img-magnifier-glass {
+            position: absolute;
+            border: 3px solid #24d824;
+            border-radius: 50%;
+            cursor: none;
+            /*Set the size of the magnifier glass:*/
+            width: 150px;
+            height: 150px;
+        }
+        .styled-button {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            border: 2px solid #1abc9c; /* Border color */
+            color: #1abc9c; /* Text color */
+            background-color: #ffffff; /* Background color */
+            border-radius: 4px; /* Rounded corners */
+            transition: background-color 0.3s, color 0.3s; /* Smooth transition on hover */
+        }
+
+        /* Hover effect */
+        .styled-button:hover {
+            background-color: #1abc9c; /* Hover background color */
+            color: #ffffff; /* Hover text color */
+        }
+
+        /* * {
+            box-sizing: border-box;
+        } */
+
+        .wrapper {
+            /* max-width: 50rem; */
+            max-width: 1500px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .tabs {
+            position: relative;
+            margin: 3rem 0;
+            background: #ffffff;
+            /* height: 14.75rem; */
+            height: 2.75em;
+        }
+        .tabs::before,
+        .tabs::after {
+            content: "";
+            display: table;
+        }
+        .tabs::after {
+            clear: both;
+        }
+        .tab {
+            float: left;
+        }
+        .tab-switch {
+            display: none;
+        }
+        .tab-label {
+            position: relative;
+            display: block;
+            line-height: 2.75em;
+            height: 3em;
+            padding: 0 1.618em;
+            background: #1abc9c;
+            border-right: 0.125rem solid #16a085;
+            color: #fff;
+            cursor: pointer;
+            top: 0;
+            transition: all 0.25s;
+        }
+        .tab-label:hover {
+            top: -0.25rem;
+            transition: top 0.25s;
+        }
+        .tab-content {
+            /* height: 12rem; */
+            position: absolute;
+            z-index: 1;
+            top: 2.75em;
+            left: 0;
+            padding: 1.618rem;
+            background: #fff;
+            color: #2c3e50;
+            /* border-bottom: 0.25rem solid #bdc3c7; */
+            opacity: 0;
+            transition: all 0.35s;
+        }
+        .tab-switch:checked + .tab-label {
+            background: #fff;
+            color: #2c3e50;
+            border-bottom: 0;
+            border-right: 0.125rem solid #fff;
+            transition: all 0.35s;
+            z-index: 1;
+            top: -0.0625rem;
+        }
+        .tab-switch:checked + label + .tab-content {
+            z-index: 2;
+            opacity: 1;
+            transition: all 0.35s;
+        }
+
+        #video-compare-container {
+            /* display: inline-block; */
+            line-height: 0;
+            position: relative;
+            width: 400%;
+            padding-top: 42.3%;
+        }
+        #video-compare-container > video {
+            width: 100%;
+            position: absolute;
+            top: 0;
+            /* height: 100%; */
+        }
+        #video-clipper {
+            width: 100%;
+            position: absolute;
+            top: 0;
+            /* bottom: 0; */
+            overflow: hidden;
+        }
+        #video-clipper video {
+            width: 200%;
+            postion: absolute;
+            height: 100%;
+        }
+        .overlayText {
+            color: rgb(14, 13, 13);
+            font-size: 20px;
+        }
+
+        #leftText {
+            position: absolute;
+            top: 30%;
+            left: 5%;
+            z-index: 1;
+        }
+
+        #rightText {
+            position: absolute;
+            top: 30%;
+            right: 5%;
+            z-index: 0;
+        }
+
+    </style>
+
+    <script>
+        function magnify(imgID, zoom) {
+            var img, glass, w, h, bw;
+            img = document.getElementById(imgID);
+            
+            // create magnifier glass.
+            glass = document.createElement("DIV");
+            glass.setAttribute("class", "img-magnifier-glass");
+            
+            // insert magnifier glass.
+            img.parentElement.insertBefore(glass, img);
+            
+            // set background properties for the magnifier glass.
+            glass.style.backgroundImage = "url('" + img.src + "')";
+            glass.style.backgroundRepeat = "no-repeat";
+            glass.style.backgroundSize = (img.width * zoom) + "px " + (img.height * zoom) + "px";
+            bw = 3;
+            w = glass.offsetWidth / 2;
+            h = glass.offsetHeight / 2;
+            
+            // execute a function when someone moves the magnifier glass over the image
+            glass.addEventListener("mousemove", moveMagnifier);
+            img.addEventListener("mousemove", moveMagnifier);
+            // and also for touch screens
+            glass.addEventListener("touchmove", moveMagnifier);
+            img.addEventListener("touchmove", moveMagnifier);
+
+            function moveMagnifier(e) {
+                var pos, x, y;
+                /*prevent any other actions that may occur when moving over the image*/
+                e.preventDefault();
+                // get the cursor's x and y positions
+                pos = getCursorPos(e);
+                x = pos.x;
+                y = pos.y;
+                /*prevent the magnifier glass from being positioned outside the image:*/
+                if (x > img.width - (w / zoom)) {x = img.width - (w / zoom);}
+                if (x < w / zoom) {x = w / zoom;}
+                if (y > img.height - (h / zoom)) {y = img.height - (h / zoom);}
+                if (y < h / zoom) {y = h / zoom;}
+
+                /*set the position of the magnifier glass:*/
+                if (glass.style.backgroundImage == "") {
+                    glass.style.backgroundImage = "url('" + img.src + "')";
+                }
+                if (glass.style.border == "0px") {
+                    glass.style.border = "3px solid #24d824";
+                }
+                // glass.style.left = (x - w) + "px";
+                // glass.style.top = (y - h) + "px";
+                glass.style.left = (img.offsetLeft + x - w) + "px";
+                glass.style.top = (img.offsetTop + y - h) + "px";
+
+                /*display what the magnifier glass "sees":*/
+                glass.style.backgroundPosition = "-" + ((x * zoom) - w + bw) + "px -" + ((y * zoom) - h + bw) + "px";
+                
+                e = e || window.event;
+                /*get the x and y positions of the image:*/
+                a = img.getBoundingClientRect();
+                if (e.pageX < a.left || e.pageX > a.left + img.width ||
+                    e.pageY < a.top || e.pageY > a.top + img.height) {
+                    glass.style.backgroundImage = "";
+                    // glass.style.backgroundSize = "0px";
+                    glass.style.border = "0px";
+                    // glass.remove();
+                }
+            }
+
+            function getCursorPos(e) {
+                var a, x = 0, y = 0;
+                e = e || window.event;
+                /*get the x and y positions of the image:*/
+                a = img.getBoundingClientRect();
+                /*calculate the cursor's x and y coordinates, relative to the image:*/
+                x = e.pageX - a.left;
+                y = e.pageY - a.top;
+                /*consider any page scrolling:*/
+                x = x - window.pageXOffset;
+                y = y - window.pageYOffset;
+                return {x : x, y : y};
+            }
+        }
+
+    </script>
+
+</head>
+
+
+<body lang="en" data-new-gr-c-s-check-loaded="14.1101.0" data-gr-ext-installed="">
+
+    <section id="banner">
+        <div id="banner-content">
+            <h1>SCALAR-NeRF: SCAlable LARge-scale Neural Radiance Fields for Scene Reconstruction</h1>
+            <div id="author-list">
+                <span class="author"><a href="https://aibluefisher.github.io/">Chen Yu</a></span>
+                <span class="author" style="padding-right: 0"><a href="https://www.comp.nus.edu.sg/~leegh/">Gim Hee Lee</a></span>
+            </div>
+            <div id="affil-list">
+                <span class="affil">National University of Singapore</span>
+            </div>
+            <div align="center">
+                
+            </div>
+        </div>
+    </section>
+
+
+
+    <div id="main" class="social-share" data-disabled="google,qzone,qq,douban" data-wechat-qrcode-title="请打开微信扫一扫">
+        <div class="divider"><img src="./src/divider.png" width="600"></div>
+
+        <h2><img src="./src/leaf.png" width="36" height="20" style="padding-right: 15px">Abstract</h2>
+        <div class="text">
+            <p>
+                In this work, we introduce <b>SCALAR-NeRF</b>, a novel 
+                framework tailored for scalable large-scale neural scene reconstruction. 
+                We structure the neural representation as an encoder-decoder architecture, where the encoder processes 3D point coordinates to produce encoded features, and the decoder generates geometric values that include volume densities of signed distances and colors.
+                Our approach first trains a coarse global model on the entire image dataset. 
+                Subsequently, we partition the images into smaller blocks using KMeans %, 
+                with each block being modeled by a dedicated local model. We enhance the overlapping regions across different blocks by scaling up the bounding boxes of each local block. 
+                Notably, the decoder from the global model is shared across distinct blocks 
+                and therefore promoting alignment in the feature space of local encoders.
+                We propose an effective and efficient methodology to fuse the outputs from these local models to attain the final reconstruction. Employing this refined coarse-to-fine strategy, our method outperforms state-of-the-art NeRF methods and 
+                demonstrates scalability for large-scale scene reconstruction.
+            </p>
+            <div class="text" style="width: 75%;">
+                <!-- <video width="48%" loop="" muted="" autoplay=""><source src="./videos/barn.mp4" type="video/mp4">X</video> -->
+                <video width="100%" loop="" muted="" autoplay=""><source src="./videos/caterpillar.mp4" type="video/mp4">X</video>
+            </div>
+        </div>
+
+
+
+        <h2>
+            <img src="./src/leaf.png" width="36" height="20" style="padding-right: 15px">
+            Qualitative Analysis on Tanks-and-Temples dataset
+        </h2>
+        <div class="venue"><p> <b>Hover over image</b> to move the zoomed in patch; 
+            <b>Click on ground-truth image</b> to switch to a different image</p>
+        </div>
+        <br>
+            
+        <div id="imageQualityScreenshotDiv" class="img-zoom-container" align="center">
+          <figure display="inline-block">
+            <div class="img-zoom-lens"></div>
+            <img id="ground_truth" src="./results/gt/000.png" data-image="./results/gt/">
+            <figcaption><b>Ground Truth</b></figcaption>
+          </figure>
+          <figure display="inline-block">
+            <div id="zoomed-nerf_rgb" class="img-zoom-result" data-image="./results/mlp/" 
+                style="background-image: url(./results/mlp/000.png); background-size: 0px 720px;">
+            </div>
+            <figcaption><b>NeRF</b></figcaption>
+          </figure>
+          <figure display="inline-block">
+            <div id="zoomed-ngp-hash21_rgb" class="img-zoom-result" data-image="./results/ngp_hash21/"
+                style="background-image: url(./results/ngp_hash21/000.png); background-size: 0px 720px;">
+            </div>
+            <figcaption><b>NGP (size=2^21)</b></figcaption>
+          </figure>
+          <figure display="inline-block">
+            <div id="zoomed-block-nerf_rgb" class="img-zoom-result" data-image="./results/block_nerf/"
+                style="background-image: url(./results/block_nerf/000.png); background-size: 0px 720px;">
+            </div>
+            <figcaption><b>Block-NeRF</b></figcaption>
+          </figure>
+          <figure display="inline-block">
+            <div id="zoomed-scalar_rgb" class="img-zoom-result" data-image="./results/ours/"
+                style="background-image: url(./results/ours/000.png); background-size: 0px 720px;">
+            </div>
+            <figcaption><b>Ours</b></figcaption>
+          </figure>
+        </div>
+
+
+        <h2>
+            <img src="./src/leaf.png" width="36" height="20" style="padding-right: 15px">
+            Qualitative Results for different blocks and final model
+        </h2>
+        <div id="imageTableDiv" class="text" style="padding: 5px 5px 5px 5px;">
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/barn/block_0.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/barn/block_1.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/barn/block_2.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/barn/scalar_nerf.mp4" type="video/mp4">X</video>
+            </br>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/caterpillar/block_0.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/caterpillar/block_1.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/caterpillar/block_2.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/caterpillar/scalar_nerf.mp4" type="video/mp4">X</video>
+            </br>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/ignatius/block_0.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/ignatius/block_1.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/ignatius/block_2.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/ignatius/scalar_nerf.mp4" type="video/mp4">X</video>
+            </br>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/truck/block_0.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/truck/block_1.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/truck/block_2.mp4" type="video/mp4">X</video>
+            <video width="24%" loop="" muted="" autoplay=""><source src="./videos/truck/scalar_nerf.mp4" type="video/mp4">X</video>
+            </br>
+            <table class="caption" style="width: 100%; margin: 0 80pt 0 80pt; font-size: 90%;">
+                <tbody><tr>
+                    <td style="width: 25%"><b>Block 0</b></td>
+                    <td style="width: 25%"><b>Block 1</b></td>
+                    <td style="width: 25%"><b>Block 2</b></td>
+                    <td style="width: 25%"><b>SCALAR-NeRF</b></td>
+                </tr>
+            </tbody></table>
+            </br>
+        </div>
+
+        <!-- <h2>
+            <img src="./src/leaf.png" width="36" height="20" style="padding-right: 15px">
+            Qualitative Comparison to Block-NeRF
+        </h2>
+        <div id="imageTableDiv" class="text" style="padding: 5px 5px 5px 5px;">
+            <video width="48%" loop="" muted="" autoplay=""><source src="./videos/barn.mp4" type="video/mp4">X</video>
+            <video width="48%" loop="" muted="" autoplay=""><source src="./videos/caterpillar.mp4" type="video/mp4">X</video>
+        </div> -->
+
+<script src="./src/js/magnifier.js"></script>
+<script>
+    // Modify this to the number of your images.
+    num_images = 6
+    imageZoom(
+        "ground_truth",
+        ["zoomed-nerf_rgb", "zoomed-ngp-hash21_rgb",
+        "zoomed-block-nerf_rgb", "zoomed-scalar_rgb"],
+        num_images
+    ); 
+</script>
+
+</body>
+<grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration>
+</html>
